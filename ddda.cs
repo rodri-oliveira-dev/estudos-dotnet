@@ -1,3 +1,23 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Annotations;
+using Xunit;
+
+public class EndpointMetadataTests : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly WebApplicationFactory<Program> _factory;
+
+    public EndpointMetadataTests(WebApplicationFactory<Program> factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public void Should_Have_Swagger_Metadata_On_Endpoints()
+    {
+        // Arrange
+        var app =
         // Arrange
         var app = _factory.Services;
 
