@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Rodar os testes e gerar a cobertura
+dotnet test -v m \
+    /p:CollectCoverage=true \
+    /p:CoverletOutputFormat=\"lcov\" \
+    /p:CoverletOutput=./lcov \
+    /p:ExcludeByFile="$CC_FILES_EXCLUDE"
+
+# Verificar se o arquivo lcov existe
+if [ ! -f ./lcov.info ] && [ ! -f ./lcov ]; then
+    echo "Arquivo de cobertura não encontrado!"
+    exit 1
+fi
+
+# Determinar o nome do arquivo gerado (lcov.info ou lcov)
+COVERAGE_FILE="./lcov"
+[ -f ./lcov.info ] && COVERAGE_FILE="./lcov.info"
+
+# Calcular cobertura total: lines coverage (LF = lines found, LH = lines hit)
+TOTAL_LINES=$(grep -h "^LF:" "$COVERAGE_FILE" | awk -F: '{sum+=$2} END {print sum}')
+COVERED_LINES=$(grep -h "^LH:" "$COVERAGE_FILE" | awk -F: '{sum+=$2} END {print sum}')
+
+if [ "$TOTAL_LINES" -eq 0 ]; then
+    echo "Nenhuma linha encontrada para calcular cobertura."
+    exit 1
+fi
+
+COVERAGE_PERCENT=$(awk "BEGIN { printf \"%.2f\", ($COVERED_LINES/$TOTAL_LINES)*100 }")
+echo "Cobertura de código: $COVERAGE_PERCENT%"
