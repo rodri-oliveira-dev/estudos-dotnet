@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Define o nome do arquivo de cobertura gerado pelo Coverlet.
+# Assegure-se de que este script está no mesmo diretório que o lcov.info
+# ou ajuste o caminho.
+LCOV_FILE="lcov.info"
+
+# --- Validações Iniciais ---
+
+# 1. Verifica se a ferramenta 'bc' (basic calculator) está instalada, pois é necessária para cálculos com decimais.
+if ! command -v bc &> /dev/null
+then
+    echo "Erro: A ferramenta 'bc' não está instalada. Por favor, instale-a para continuar."
+    echo "Em sistemas Debian/Ubuntu: sudo apt-get install bc"
+    echo "Em sistemas RHEL/CentOS: sudo yum install bc"
+    exit 1
+fi
+
+# 2. Verifica se o arquivo lcov.info existe no diretório atual.
+if [ ! -f "$LCOV_FILE" ]; then
+  echo "Erro: Arquivo '$LCOV_FILE' não encontrado."
+  echo "Certifique-se de que o teste com cobertura foi executado e gerou o arquivo."
+  exit 1
+fi
+
+# --- Lógica de Extração e Cálculo ---
+
+# Extrai o número total de linhas instrumentadas (Lines Found).
+# O comando grep encontra todas as linhas que começam com 'LF:'.
+# O comando awk soma os valores numéricos de cada uma dessas linhas.
+total_lines=$(grep '^LF:' "$LCOV_FILE" | awk -F: '{sum += $2} END {print sum}')
+
+# Extrai o número total de linhas executadas (Lines Hit).
+# A lógica é a mesma, mas para as linhas que começam com 'LH:'.
+hit_lines=$(grep '^LH:' "$LCOV_FILE" | awk -F: '{sum += $2} END {print sum}')
+
+# --- Verificação e Exibição do Resultado ---
+
+# Verifica se o total de linhas é maior que zero para evitar divisão por zero.
+if [ -z "$total_lines" ] || [ "$total_lines" -eq 0 ]; then
+  echo "Aviso: Nenhuma linha executável foi encontrada no relatório de cobertura."
+  echo "Cobertura de Linha: 0.00%"
+  exit 0
+fi
+
+# Calcula a porcentagem usando 'bc'.
+# 'scale=2' define a precisão para duas casas decimais.
+# A fórmula é (linhas_cobertas * 100) / total_de_linhas.
+coverage_percentage=$(echo "scale=2; ($hit_lines * 100) / $total_lines" | bc)
+
+# Exibe o resultado final de forma clara.
+echo "========================================"
+echo "Relatório de Cobertura de Código"
+echo "========================================"
+echo "Linhas Cobertas (Hit):    $hit_lines"
+echo "Total de Linhas (Found):  $total_lines"
+echo "----------------------------------------"
+echo "Porcentagem de Cobertura: $coverage_percentage%"
+echo "========================================"
+
